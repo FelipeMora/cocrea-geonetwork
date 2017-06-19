@@ -2,13 +2,23 @@
 - hosts: localhost
   connection: local
   gather_facts: false
+  vars:
+    m_keyname: geonetwork
   tasks:
+    - name: Geonetwork ec2 key
+      ec2_key:
+        region: "{{ m_region }}"
+        name: "{{ m_keyname }}"
+      register: geokey
+
+    - copy: content="{{ geokey.key.private_key }}" dest=sshkey/geonetwork.pem
+      when: geokey.key.private_key is defined
+
     - name: Creación ec2 group para acceso ssh y otros defaults
       ec2_group:
         name: geonetwork-default
         region: "{{ m_region }}"
         description: Acceso ssh y otros defaults
-        vpc_id: "{{ m_vpc_id }}"
         rules:
           - proto: tcp
             from_port: 22
@@ -20,7 +30,6 @@
         name: geonetwork-webserver
         region: "{{ m_region }}"
         description: Acceso https para servidor web
-        vpc_id: "{{ m_vpc_id }}"
         rules:
           - proto: tcp
             from_port: 443
@@ -29,6 +38,7 @@
 
     - name: Aprovisionamiento servidor de aplicaciones
       ec2:
+         id: appserver1
          region: "{{ m_region }}"
          key_name: "{{ m_keyname }}"
          group: ['default', 'geonetwork-default']
@@ -44,6 +54,7 @@
 
     - name: Aprovisionamiento servidor Solr
       ec2:
+         id: solrserver1
          region: "{{ m_region }}"
          key_name: "{{ m_keyname }}"
          group: ['default', 'geonetwork-default']
@@ -59,6 +70,7 @@
 
     - name: Aprovisionamiento servidor web
       ec2:
+         id: webserver1
          region: "{{ m_region }}"
          key_name: "{{ m_keyname }}"
          group: ['default', 'geonetwork-default', 'geonetwork-webserver']

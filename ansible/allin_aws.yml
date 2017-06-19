@@ -1,0 +1,21 @@
+---
+- include: "aws/main.yml"
+
+# wait for ec2 instances to be available
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Refresh in-memory EC2 cache
+      meta: refresh_inventory
+
+    - wait_for: port=22 host="{{ hostvars[groups['tag_Name_appserver'][0]]['ec2_private_dns_name'] }}" search_regex=OpenSSH delay=10
+      connection: local
+
+    - wait_for: port=22 host="{{ hostvars[groups['tag_Name_solrserver'][0]]['ec2_private_dns_name'] }}" search_regex=OpenSSH delay=10
+      connection: local
+
+    - wait_for: port=22 host="{{ hostvars[groups['tag_Name_webserver'][0]]['ec2_private_dns_name'] }}" search_regex=OpenSSH delay=10
+      connection: local
+
+- include: "main.yml"
